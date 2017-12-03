@@ -1,0 +1,21 @@
+FROM node
+
+RUN npm install -g yarn
+
+# Set up build dir
+ENV HOME=/var/www/app/
+RUN mkdir -p $HOME
+WORKDIR $HOME
+
+# Copy source files
+ADD . .
+
+# Install packages
+RUN yarn
+
+EXPOSE 3000
+EXPOSE 3001
+
+# Run the dev server
+ENV NODE_ENV=development
+CMD npm start

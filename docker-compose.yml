@@ -1,0 +1,49 @@
+version: '2'
+services:
+  nginx:
+    image: nginx
+    volumes:
+      - ./config/nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    links:
+      - ui
+      - api
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+  ui:
+    image: my_ui_app
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/var/www/app
+    ports:
+      - 3000
+      - 3001
+  api:
+    build: ../my_api_app/
+    image: my_api_app
+    depends_on:
+      - db
+      - redis
+    ports:
+      - 8080
+    environment:
+      - NODE_ENV=production
+    command: |
+      /bin/bash -c 'while ! `(echo > /dev/tcp/db/5432) >/dev/null 2>/dev/null`; do echo "Waiting for db to become available..."; sleep 1; done; NODE_ENV=production node app.js'
+  db:
+    image: postgres:9.6-alpine
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_USER=app_user
+      - POSTGRES_PASSWORD=app_pass
+      - POSTGRES_DB=app_dev
+      - SLEEP_LENGTH=0.1
+    volumes:
+      - ../my_api_app/sql/migrations:/docker-entrypoint-initdb.d
+  redis:
+    image: redis:4.0.1
+    ports:
+      - 6379
